@@ -56,7 +56,7 @@ std::string gettheline(std::string path, long blockNum){
 
 //Function for compressing input data in GZIP format
 void compressGZIP(const char* input, int inputSize, const std::string& outputFileName) {
-    std::ofstream outputFile(outputFileName, std::ios::binary);
+    std::ofstream outputFile( "/home/t3nbu/zips/" + outputFileName, std::ios::binary);
     if (!outputFile.is_open()) {
         std::cerr << "Error opening output file." << std::endl;
         return;
@@ -104,6 +104,55 @@ void compressGZIP(const char* input, int inputSize, const std::string& outputFil
     return;
 }
 
+//Function for compressing input data in BZIP2 format
+
+void compressBZIP2(const char* input, int inputSize, const char* outputFileName) {
+    int result;  // Variable to store error codes
+
+    // Open the output file for writing in binary mode
+    const char* directory = "/home/t3nbu/zips/";
+    char fullPath[256];  // Adjust the size as needed
+
+    // Construct the full path
+    snprintf(fullPath, sizeof(fullPath), "%s%s", directory, outputFileName);
+
+    FILE* outputFile = fopen(fullPath, "w");
+
+    if (!outputFile) {
+        std::cerr << "Error opening the output file." << std::endl;
+        return;
+    }
+    // Initialize the BZIP2 stream
+    BZFILE* bzip2Stream = BZ2_bzWriteOpen(&result,outputFile, 9, 0, 0);
+
+    if (bzip2Stream == NULL) {
+        std::cerr << "Error initializing BZIP2 stream. Error code: " << result << std::endl;
+        fclose(outputFile);
+        return;
+    }
+
+    // Compress and write the data
+    result = BZ_OK;
+    BZ2_bzWrite(&result, bzip2Stream, const_cast<char*>(input), inputSize);
+
+    if (result != BZ_OK) {
+        std::cerr << "Error compressing data. Error code: " << result << std::endl;
+        BZ2_bzWriteClose(&result, bzip2Stream, 0, NULL, NULL);
+        fclose(outputFile);
+        return;
+    }
+
+    BZ2_bzWriteClose(&result, bzip2Stream, 0, NULL, NULL);
+    fclose(outputFile);
+    return;
+}
+
+//Function for compressing input data in LZMA format
+
+void compressLZMA(const char* input, int inputSize, const std::string& outputFileName) {
+    return;
+}
+
 void blockRead(const char* usbPath, size_t blockSize) {
 
     int driveFile = open(usbPath, O_RDONLY);
@@ -128,13 +177,15 @@ void blockRead(const char* usbPath, size_t blockSize) {
 
         std::string hashBuf = calcHash(buffer, bytesRead);
         hMap[blockNum] = hashBuf;
-        std::string oldHash = gettheline("/home/t3nbu/Thesis/cc backup/toshiba.txt", blockNum +1);
+        std::string oldHash = gettheline("/home/t3nbu/toshiba.txt", blockNum +1);
 
         if (oldHash != hMap[blockNum]){
 	  std::cout << "\n old hash: " << oldHash << " \n new hash: " << hMap[blockNum] << std::endl;
 	  std::cout <<"Block number to be sent: "<< numDiffs << std::endl;
 	  numDiffs++;
-	  compressGZIP(buffer, sizeof(buffer), blockNum + ".gz");
+	  std::string bNumStr = std::to_string(blockNum);
+	  compressBZIP2(buffer, sizeof(buffer), bNumStr.c_str());
+	  //compressGZIP(buffer, sizeof(buffer), std::to_string(blockNum) + ".gz");
 	  //Retrieve and store the literal block|| should just call "buffer"
 	  //Compress the block "compressGZIP(buffer)
 	  //Figure out where to write the block to, will be written to file in WD
