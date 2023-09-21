@@ -101,7 +101,6 @@ void compressGZIP(const char* input, int inputSize, const std::string& outputFil
 
     deflateEnd(&stream);
     outputFile.close();
-    return;
 }
 
 //Function for compressing input data in BZIP2 format
@@ -110,7 +109,7 @@ void compressBZIP2(const char* input, int inputSize, const char* outputFileName)
     int result;  // Variable to store error codes
 
     // Open the output file for writing in binary mode
-    const char* directory = "/home/t3nbu/zips/";
+    const char* directory = "/home/t3nbu/2048BZIP2/";
     char fullPath[256];  // Adjust the size as needed
 
     // Construct the full path
@@ -144,15 +143,62 @@ void compressBZIP2(const char* input, int inputSize, const char* outputFileName)
 
     BZ2_bzWriteClose(&result, bzip2Stream, 0, NULL, NULL);
     fclose(outputFile);
-    return;
 }
 
 //Function for compressing input data in LZMA format
 
-void compressLZMA(const char* input, int inputSize, const std::string& outputFileName) {
-    return;
-}
+void compressLZMA(const char* inputArray, size_t inputSize, const std::string& outputFileName) {
+    lzma_stream stream = LZMA_STREAM_INIT; // Initialize LZMA stream
 
+    // Open the output file for writing in binary mode
+    std::ofstream outputFile("/home/t3nbu/2048LZMA/" + outputFileName, std::ios::binary);
+
+    if (!outputFile.is_open()) {
+        std::cerr << "Error opening the output file." << std::endl;
+        return;
+    }
+
+    // Initialize the LZMA encoder
+    lzma_ret ret = lzma_easy_encoder(&stream, LZMA_PRESET_DEFAULT, LZMA_CHECK_CRC64);
+
+    if (ret != LZMA_OK) {
+        std::cerr << "Error initializing LZMA encoder. Error code: " << ret << std::endl;
+        outputFile.close();
+        return;
+    }
+
+    // Set the input buffer
+    stream.next_in = reinterpret_cast<const uint8_t*>(inputArray);
+    stream.avail_in = inputSize;
+
+    // Set the output buffer
+    uint8_t outputBuffer[BUFSIZ];
+    stream.next_out = outputBuffer;
+    stream.avail_out = sizeof(outputBuffer);
+
+    // Compress and write the data
+    while (true) {
+        ret = lzma_code(&stream, LZMA_FINISH);
+
+        if (ret == LZMA_STREAM_END) {
+            outputFile.write(reinterpret_cast<const char*>(outputBuffer), sizeof(outputBuffer) - stream.avail_out);
+            break; // Compression is complete
+        } else if (ret != LZMA_OK) {
+            std::cerr << "Error compressing data. Error code: " << ret << std::endl;
+            lzma_end(&stream);
+            outputFile.close();
+            return;
+        }
+
+        outputFile.write(reinterpret_cast<const char*>(outputBuffer), sizeof(outputBuffer) - stream.avail_out);
+        stream.next_out = outputBuffer;
+        stream.avail_out = sizeof(outputBuffer);
+    }
+
+    // Clean up
+    lzma_end(&stream);
+    outputFile.close();
+}
 void blockRead(const char* usbPath, size_t blockSize) {
 
     int driveFile = open(usbPath, O_RDONLY);
@@ -184,11 +230,9 @@ void blockRead(const char* usbPath, size_t blockSize) {
 	  std::cout <<"Block number to be sent: "<< numDiffs << std::endl;
 	  numDiffs++;
 	  std::string bNumStr = std::to_string(blockNum);
-	  compressBZIP2(buffer, sizeof(buffer), bNumStr.c_str());
-	  //compressGZIP(buffer, sizeof(buffer), std::to_string(blockNum) + ".gz");
-	  //Retrieve and store the literal block|| should just call "buffer"
-	  //Compress the block "compressGZIP(buffer)
-	  //Figure out where to write the block to, will be written to file in WD
+	  //compressGZIP(buffer, sizeof(buffer), bNumStr + ".gz");
+	  //compressBZIP2(buffer, sizeof(buffer), bNumStr.c_str());
+	  compressLZMA(buffer,sizeof(buffer), bNumStr + ".xz");
         }
         blockNum++;
     }
