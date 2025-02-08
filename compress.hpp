@@ -11,7 +11,6 @@
 #include <bzlib.h>
 #include <lzma.h>
 
-
 using namespace std;
 
 void compressGZIP(const char* input, size_t inputSize, const string& outputFileName) {

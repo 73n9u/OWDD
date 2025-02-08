@@ -1,0 +1,14 @@
+* OWDD: One Way Disk Diff(er)
+
+** What is OWDD
+
+This utility is intended to be used to transfer data from one disk of a computer to another without the requirement for the other to communicate back. This means that there is a host and a recipient. 
+
+** When would you use this?
+
+This is primarily useful for upgrading the recipient computer where it has very limited bandwith or a connection without an uplink. Some scenarios include:
+
+- Remote data collection on low powered computers or SBC's away from easy access for in-person upgrading
+- Computers onboard space probes
+
+The intent is to create a replica of the host system and upgrade the remote system with as little data payload as possible. This functions at the block level of a disk so the function of the application is _file system agnostic_.
