@@ -22,7 +22,7 @@ void generateHashFile(const char *sourcePath, size_t blockSize,
 
   iterateBlocks(sourcePath, blockSize,
                 [&hashFile, &totalBlocks](const char *buf, size_t size,
-                                          long long blockNum) {
+                                          long long /*blockNum*/) {
                   auto hash = calcHash(buf, size);
                   hashFile.write(reinterpret_cast<const char *>(hash.data()),
                                  32);
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
   }
 
   const char *source = argv[1];
-  size_t blockSize = std::stoull(argv[2]);
+  size_t blockSize = std::stoul(argv[2]);
   std::string output = argv[3];
 
   try {

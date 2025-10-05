@@ -9,31 +9,38 @@ SRC_COMMON = src/common
 BUILD_DIR = build
 
 # Hash generation utility
-HASH_GEN_TARGET = hash_generation
+HASH_GEN_TARGET = $(BUILD_DIR)/hash_generation
 HASH_GEN_SRCS = $(SRC_HASH)/hash_generation.cpp \
                 $(SRC_HASH)/block_reader.cpp \
                 $(SRC_HASH)/hasher.cpp
 
-# Sync utility (placeholder for later)
-SYNC_TARGET = block_sync
-SYNC_SRCS = $(SRC_SYNC)/block_sync.cpp
+# Sync utility
+SYNC_TARGET = $(BUILD_DIR)/block_sync
+SYNC_SRCS = $(SRC_SYNC)/block_sync.cpp \
+            $(SRC_SYNC)/detect_diff.cpp \
+            $(SRC_SYNC)/hash_reader.cpp \
+            $(SRC_HASH)/block_reader.cpp \
+            $(SRC_HASH)/hasher.cpp
 
 .PHONY: all clean hash sync
 
-all: hash
+all: hash block_sync
 
 hash: $(HASH_GEN_TARGET)
 
-$(HASH_GEN_TARGET): $(HASH_GEN_SRCS)
+$(HASH_GEN_TARGET): $(HASH_GEN_SRCS) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 sync: $(SYNC_TARGET)
 
-$(SYNC_TARGET): $(SYNC_SRCS)
+$(SYNC_TARGET): $(SYNC_SRCS) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
 clean:
-	rm -f $(HASH_GEN_TARGET) $(SYNC_TARGET)
+	rm -rf $(BUILD_DIR)
 
 help:
 	@echo "Available targets:"
