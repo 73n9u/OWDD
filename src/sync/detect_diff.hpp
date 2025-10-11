@@ -29,6 +29,21 @@ long long detectChangedBlocks(
     std::function<void(long long, size_t)> callback);
 
 /**
+ * Compare old hash file with new source file to detect changed blocks
+ * and provide block data for compression or other processing
+ *
+ * @param oldHashPath Path to the old hash file
+ * @param newSourcePath Path to the new source file/device
+ * @param blockSize Size of blocks used during hashing
+ * @param callback Function called for each changed block (blockNumber, offset, blockData, dataSize)
+ * @return Total number of changed blocks detected
+ */
+long long detectChangedBlocksWithData(
+    const std::string &oldHashPath, const std::string &newSourcePath,
+    size_t blockSize,
+    std::function<void(long long, size_t, const char *, size_t)> callback);
+
+/**
  * Get a vector of all changed block numbers
  *
  * @param oldHashPath Path to the old hash file

@@ -4,10 +4,10 @@
 #include "hash_reader.hpp"
 #include <iostream>
 
-long long detectChangedBlocks(const std::string &oldHashPath,
-                              const std::string &newSourcePath,
-                              size_t blockSize,
-                              std::function<void(long long, size_t)> callback) {
+long long detectChangedBlocksWithData(
+    const std::string &oldHashPath, const std::string &newSourcePath,
+    size_t blockSize,
+    std::function<void(long long, size_t, const char *, size_t)> callback) {
   // Load all old hashes into memory for comparison
   std::vector<std::array<unsigned char, 32>> oldHashes;
 
@@ -27,7 +27,7 @@ long long detectChangedBlocks(const std::string &oldHashPath,
 
                   // Check if block number is beyond old hash file (file grew)
                   if (blockNum >= static_cast<long long>(oldHashes.size())) {
-                    callback(blockNum, blockNum * blockSize);
+                    callback(blockNum, blockNum * blockSize, buf, size);
                     changedCount++;
                     return;
                   }
@@ -39,16 +39,23 @@ long long detectChangedBlocks(const std::string &oldHashPath,
                     std::cout << "New hash: " << hashToHex(newHash)
                               << std::endl;
 
-                    callback(blockNum, blockNum * blockSize);
+                    callback(blockNum, blockNum * blockSize, buf, size);
                     changedCount++;
                   }
                 });
 
-  // Check if file shrunk (fewer blocks than before)
-  // This would mean some blocks at the end were removed
-  // We might want to handle this case differently depending on use case
-
   return changedCount;
+}
+
+long long detectChangedBlocks(const std::string &oldHashPath,
+                              const std::string &newSourcePath,
+                              size_t blockSize,
+                              std::function<void(long long, size_t)> callback) {
+  // Wrap the callback to ignore block data
+  return detectChangedBlocksWithData(
+      oldHashPath, newSourcePath, blockSize,
+      [&callback](long long blockNum, size_t offset, const char * /*buf*/,
+                  size_t /*size*/) { callback(blockNum, offset); });
 }
 
 std::vector<ChangedBlock> getChangedBlocks(const std::string &oldHashPath,
@@ -57,7 +64,7 @@ std::vector<ChangedBlock> getChangedBlocks(const std::string &oldHashPath,
   std::vector<ChangedBlock> changed;
 
   detectChangedBlocks(oldHashPath, newSourcePath, blockSize,
-                      [&changed, blockSize](long long blockNum, size_t offset) {
+                      [&changed](long long blockNum, size_t offset) {
                         changed.push_back({blockNum, offset});
                       });
 
