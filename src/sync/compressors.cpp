@@ -10,10 +10,8 @@
 using namespace std;
 
 void compressGZIP(const char *input, size_t inputSize,
-                  const string &outputFileName) {
-  ofstream outputFile("/home/t3nbu/testresults/4096/object/GZIP/" +
-                          outputFileName,
-                      ios::binary);
+                  const string &outputFileName, const string &outputDirName) {
+  ofstream outputFile(outputDirName + outputFileName, ios::binary);
   if (!outputFile.is_open()) {
     cerr << "Error opening output file." << endl;
     return;
@@ -62,19 +60,18 @@ void compressGZIP(const char *input, size_t inputSize,
 }
 
 void compressBZIP2(const char *input, size_t inputSize,
-                   const char *outputFileName) {
+                   const string &outputFileName, const string &outputDirName) {
   int result;
 
-  const char *directory = "/home/t3nbu/testresults/4096/object/BZIP2/";
-  char fullPath[256];
-  snprintf(fullPath, sizeof(fullPath), "%s%s", directory, outputFileName);
-
-  FILE *outputFile = fopen(fullPath, "w");
+  // BZIP expects a FILE* pointer, not an ofstream.
+  string fullPath = outputDirName + outputFileName;
+  FILE *outputFile = fopen(fullPath.c_str(), "wb");
 
   if (!outputFile) {
     cerr << "Error opening the output file." << endl;
     return;
   }
+
   BZFILE *bzip2Stream = BZ2_bzWriteOpen(&result, outputFile, 9, 0, 0);
 
   if (bzip2Stream == NULL) {
@@ -98,12 +95,10 @@ void compressBZIP2(const char *input, size_t inputSize,
 }
 
 void compressLZMA(const char *input, size_t inputSize,
-                  const string &outputFileName) {
+                  const string &outputFileName, const string &outputDirName) {
   lzma_stream stream = LZMA_STREAM_INIT;
 
-  ofstream outputFile("/home/t3nbu/testresults/4096/object/LZMA/" +
-                          outputFileName,
-                      ios::binary);
+  ofstream outputFile(outputDirName + outputFileName, ios::binary);
 
   if (!outputFile.is_open()) {
     cerr << "Error opening the output file." << endl;
