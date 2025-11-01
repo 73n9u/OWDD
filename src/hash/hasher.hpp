@@ -2,6 +2,7 @@
 #define HASHER_HPP
 
 #include <array>
+#include <cstddef>
 #include <string>
 
 // Calculate SHA-256 hash and return as 32-byte binary array

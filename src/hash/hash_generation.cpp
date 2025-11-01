@@ -1,7 +1,10 @@
-#include "block_reader.hpp"
 #include "hasher.hpp"
+#include <cerrno>
+#include <cstring>
+#include <fcntl.h>
 #include <fstream>
 #include <iostream>
+#include <unistd.h>
 
 /**
  * Generate hash file from a source file/device
@@ -12,27 +15,44 @@
  */
 void generateHashFile(const char *sourcePath, size_t blockSize,
                       const std::string &outputPath) {
-  std::ofstream hashFile(outputPath, std::ios::binary);
 
+  // Open the disk first
+  int fd = open(sourcePath, O_RDONLY);
+
+  if (fd == -1) {
+    throw std::runtime_error(std::string("Failed to open source file: ") +
+                             sourcePath);
+  }
+
+  // Create an output stream for where the write the hashes to
+  std::ofstream hashFile(outputPath, std::ios::binary);
+  // Throw an errror if the file is open
   if (!hashFile.is_open()) {
+    // Close the source file.
+    close(fd);
     throw std::runtime_error("Failed to open output file: " + outputPath);
   }
 
   long long totalBlocks = 0;
 
-  iterateBlocks(sourcePath, blockSize,
-                [&hashFile, &totalBlocks](const char *buf, size_t size,
-                                          long long /*blockNum*/) {
-                  auto hash = calcHash(buf, size);
-                  hashFile.write(reinterpret_cast<const char *>(hash.data()),
-                                 32);
-                  totalBlocks++;
+  // Iterate over the blocks of the sourcefile and calculate the hash of each of
+  // them, writing to the ofstream
+  ssize_t bytesRead;
+  char buffer[blockSize];
+  while ((bytesRead = read(fd, buffer, blockSize)) > 0) {
+    auto hash = calcHash(buffer, bytesRead);
+    // write the raw binary of the hash to file
+    hashFile.write(reinterpret_cast<const char *>(hash.data()), hash.size());
+    // increment the blockCounter
+    totalBlocks++;
+  }
+  if (bytesRead == -1) {
+    close(fd);
+    throw std::runtime_error(
+        std::string("Reading block encountered an error:") + strerror(errno));
+  }
 
-                  if (totalBlocks % 1000 == 0) {
-                    std::cout << "Processed " << totalBlocks << " blocks...\n";
-                  }
-                });
-
+  close(fd);
   hashFile.close();
   std::cout << "Done! Generated " << totalBlocks << " hashes.\n";
 }

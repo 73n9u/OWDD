@@ -18,7 +18,8 @@ std::array<unsigned char, 32> calcHash(const char *inputStream, size_t size) {
   EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 
   if (mdctx == nullptr) {
-    throw std::runtime_error("Failed to create EVP_MD_CTX for hash calculation");
+    throw std::runtime_error(
+        "Failed to create EVP_MD_CTX for hash calculation");
   }
 
   const EVP_MD *md = EVP_sha256();
