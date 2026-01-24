@@ -24,7 +24,7 @@ void generateHashFile(const char *sourcePath, size_t blockSize,
                              sourcePath);
   }
 
-  // Create an output stream for where the write the hashes to
+  // Create an output stream for where to write the hashes to
   std::ofstream hashFile(outputPath, std::ios::binary);
   // Throw an errror if the file is open
   if (!hashFile.is_open()) {
