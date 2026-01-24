@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2
+CXXFLAGS = -std=c++17 -Wall -Wunused-function -Wunused-label -Wunused-variable -Wextra -O2
 LDFLAGS = -lssl -lcrypto -lz -lbz2 -llzma
 
 # Directories
@@ -11,7 +11,6 @@ BUILD_DIR = build
 # Hash generation utility
 HASH_GEN_TARGET = $(BUILD_DIR)/hash_generation
 HASH_GEN_SRCS = $(SRC_HASH)/hash_generation.cpp \
-                $(SRC_HASH)/block_reader.cpp \
                 $(SRC_HASH)/hasher.cpp
 
 # Sync utility
@@ -24,7 +23,7 @@ SYNC_SRCS = $(SRC_SYNC)/block_sync.cpp \
 
 .PHONY: all clean hash sync
 
-all: hash block_sync
+all: hash sync
 
 hash: $(HASH_GEN_TARGET)
 
