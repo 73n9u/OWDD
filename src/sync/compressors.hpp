@@ -2,19 +2,19 @@
 #define COMPRESSORS_HPP
 
 #include <cstring>
-#include <string>
 
 #include <bzlib.h>
 #include <lzma.h>
+#include <string>
 #include <zlib.h>
 
-void compressGZIP(const char *input, size_t inputSize,
-                  const std::string &outputFileName);
+enum class CompressionType { GZIP, LZMA, BZIP2 };
 
-void compressBZIP2(const char *input, size_t inputSize,
-                   const char *outputFileName);
+CompressionType parseCompressionType(std::string compressionStr);
 
-void compressLZMA(const char *input, size_t inputSize,
-                  const std::string &outputFileName);
+void compressGZIP(const char *input, size_t inputSize);
 
+void compressLZMA(const char *input, size_t inputSize);
+
+void compressBZIP2(const char *input, size_t inputSize);
 #endif

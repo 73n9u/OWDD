@@ -1,146 +1,111 @@
 #pragma once
-#include <cstring>
-#include <fstream>
-#include <iostream>
-
 #include <bzlib.h>
+#include <cstring>
+#include <iostream>
 #include <lzma.h>
+#include <stdexcept>
+#include <string>
+#include <vector>
 #include <zlib.h>
 
-using namespace std;
+#include "compressors.hpp"
 
-void compressGZIP(const char *input, size_t inputSize,
-                  const string &outputFileName, const string &outputDirName) {
-  ofstream outputFile(outputDirName + outputFileName, ios::binary);
-  if (!outputFile.is_open()) {
-    cerr << "Error opening output file." << endl;
-    return;
-  }
+CompressionType parseCompressionType(std::string compressionStr) {}
 
+void compressGZIP(const char *input, size_t inputSize, char *output) {
+
+  // Init z_stream object
   z_stream stream;
-  memset(&stream, 0, sizeof(stream));
+  stream.zalloc = Z_NULL;
+  stream.zfree = Z_NULL;
+  stream.opaque = Z_NULL;
 
-  if (deflateInit2(&stream, Z_BEST_COMPRESSION, Z_DEFLATED, 31, 8,
-                   Z_DEFAULT_STRATEGY) != Z_OK) {
-    cerr << "deflateInit2 error." << endl;
-    return;
+  // Set compression level, compression type, windows bits, memLevel and
+  // strategy
+  int z_res = deflateInit2(&stream, Z_BEST_COMPRESSION, Z_DEFLATED, 15, 8,
+                           Z_DEFAULT_STRATEGY);
+
+  if (z_res != Z_OK) {
+    throw std::runtime_error(std::string("Failed to initialize GZIP stream"));
   }
 
+  // Define the next in as a cast of the input as z_streams require
+  // next inputs to be Bytef types
   stream.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(input));
   stream.avail_in = inputSize;
 
-  Bytef buffer[inputSize];
-
-  stream.next_out = buffer;
+  stream.next_out = reinterpret_cast<Bytef *>(output);
   stream.avail_out = inputSize;
 
-  while (true) {
-    int result = deflate(&stream, Z_FINISH);
-    if (result == Z_STREAM_END) {
-      int bytesToWrite = inputSize - stream.avail_out;
-      outputFile.write(reinterpret_cast<const char *>(buffer), bytesToWrite);
-      break;
-    } else if (result != Z_OK) {
-      cerr << "deflate error." << endl;
-      deflateEnd(&stream);
-      return;
-    }
+  // Compress the input in the stream in one pass until it's finished
+  z_res = deflate(&stream, Z_FINISH);
 
-    if (stream.avail_out == 0) {
-      int bytesToWrite = inputSize;
-      outputFile.write(reinterpret_cast<const char *>(buffer), bytesToWrite);
-
-      stream.next_out = buffer;
-      stream.avail_out = inputSize;
-    }
+  // If we didn't reach the end of the stream without an error
+  if (z_res != Z_STREAM_END) {
+    deflateEnd(&stream);
+    throw std::runtime_error(std::string("Failed to compress GZIP stream"));
   }
 
   deflateEnd(&stream);
-  outputFile.close();
 }
 
-void compressBZIP2(const char *input, size_t inputSize,
-                   const string &outputFileName, const string &outputDirName) {
-  int result;
+void compressLZMA(const char *input, size_t inputSize, char *output) {
 
-  // BZIP expects a FILE* pointer, not an ofstream.
-  string fullPath = outputDirName + outputFileName;
-  FILE *outputFile = fopen(fullPath.c_str(), "wb");
-
-  if (!outputFile) {
-    cerr << "Error opening the output file." << endl;
-    return;
-  }
-
-  BZFILE *bzip2Stream = BZ2_bzWriteOpen(&result, outputFile, 9, 0, 0);
-
-  if (bzip2Stream == NULL) {
-    cerr << "Error initializing BZIP2 stream. Error code: " << result << endl;
-    fclose(outputFile);
-    return;
-  }
-
-  result = BZ_OK;
-  BZ2_bzWrite(&result, bzip2Stream, const_cast<char *>(input), inputSize);
-
-  if (result != BZ_OK) {
-    cerr << "Error compressing data. Error code: " << result << endl;
-    BZ2_bzWriteClose(&result, bzip2Stream, 0, NULL, NULL);
-    fclose(outputFile);
-    return;
-  }
-
-  BZ2_bzWriteClose(&result, bzip2Stream, 0, NULL, NULL);
-  fclose(outputFile);
-}
-
-void compressLZMA(const char *input, size_t inputSize,
-                  const string &outputFileName, const string &outputDirName) {
   lzma_stream stream = LZMA_STREAM_INIT;
-
-  ofstream outputFile(outputDirName + outputFileName, ios::binary);
-
-  if (!outputFile.is_open()) {
-    cerr << "Error opening the output file." << endl;
-    return;
-  }
 
   lzma_ret ret =
       lzma_easy_encoder(&stream, LZMA_PRESET_DEFAULT, LZMA_CHECK_CRC64);
 
   if (ret != LZMA_OK) {
-    cerr << "Error initializing LZMA encoder. Error code: " << ret << endl;
-    outputFile.close();
-    return;
+    throw std::runtime_error(std::string("Error initialising LZMA stream."));
   }
 
   stream.next_in = reinterpret_cast<const uint8_t *>(input);
   stream.avail_in = inputSize;
 
-  uint8_t outputBuffer[BUFSIZ];
-  stream.next_out = outputBuffer;
-  stream.avail_out = sizeof(outputBuffer);
+  stream.next_out = reinterpret_cast<uint8_t *>(output);
+  stream.avail_out = inputSize;
 
-  while (true) {
-    ret = lzma_code(&stream, LZMA_FINISH);
+  ret = lzma_code(&stream, LZMA_FINISH);
 
-    if (ret == LZMA_STREAM_END) {
-      outputFile.write(reinterpret_cast<const char *>(outputBuffer),
-                       sizeof(outputBuffer) - stream.avail_out);
-      break;
-    } else if (ret != LZMA_OK) {
-      cerr << "Error compressing data. Error code: " << ret << endl;
-      lzma_end(&stream);
-      outputFile.close();
-      return;
-    }
+  if (ret != LZMA_STREAM_END) {
+    lzma_end(&stream);
+    throw std::runtime_error(std::string("Error compressing LZMA stream."));
+  }
+  lzma_end(&stream);
+}
 
-    outputFile.write(reinterpret_cast<const char *>(outputBuffer),
-                     sizeof(outputBuffer) - stream.avail_out);
-    stream.next_out = outputBuffer;
-    stream.avail_out = sizeof(outputBuffer);
+void compressBZIP2(const char *input, size_t inputSize, char *output) {
+
+  // Initialize the stream with BZIP2 default memory allocators
+  bz_stream stream;
+  stream.bzalloc = NULL;
+  stream.bzfree = NULL;
+  stream.opaque = NULL;
+
+  // verbosity: Set to 0 for nill debugging output of compression
+  // workFactor: Set to 0 for standard fallback for repetitive data in stream
+  int bz_res = BZ2_bzCompressInit(&stream, 9, 1, 0);
+
+  // Check for errors in bz_res initialisation
+  if (bz_res != BZ_OK) {
+    throw std::runtime_error(std::string("Error initializing BZIP2 stream."));
   }
 
-  lzma_end(&stream);
-  outputFile.close();
+  // Set the streams data input pointer and size
+  stream.next_in = const_cast<char *>(input);
+  stream.avail_in = inputSize;
+
+  // Set the streams data output pointer and size
+  stream.next_out = output;
+  stream.avail_out = inputSize;
+
+  // Compress the entire input
+  bz_res = BZ2_bzCompress(&stream, BZ_FINISH);
+
+  if (bz_res != BZ_STREAM_END) {
+    BZ2_bzCompressEnd(&stream);
+    throw std::runtime_error(std::string("BZIP compression failed."));
+  }
+  BZ2_bzCompressEnd(&stream);
 }
