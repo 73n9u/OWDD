@@ -12,9 +12,12 @@ enum class CompressionType { GZIP, LZMA, BZIP2 };
 
 CompressionType parseCompressionType(std::string compressionStr);
 
-void compressGZIP(const char *input, size_t inputSize);
+void compressGZIP(const unsigned char *input, size_t inputSize,
+                  unsigned char *output);
 
-void compressLZMA(const char *input, size_t inputSize);
+void compressLZMA(const unsigned char *input, size_t inputSize,
+                  unsigned char *output);
 
-void compressBZIP2(const char *input, size_t inputSize);
+void compressBZIP2(const unsigned char *input, size_t inputSize,
+                   unsigned char *output);
 #endif
