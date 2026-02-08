@@ -86,4 +86,21 @@ void compareHash(const char *sourcePath, const char *sourceDrive,
     }
   }
 }
-int main(int argc, char *argv[]) {}
+int main(int argc, char *argv[]) {
+  if (argc < 5) {
+    std::cerr << ("Usage: program <compression_type>\n");
+    return 1;
+  }
+  try {
+    const char *hashFilePath = argv[1];
+    const char *sourceDrive = argv[2];
+    const size_t blockSize = reinterpret_cast<size_t>(argv[3]);
+    CompressionType compression = parseCompressionType(argv[5]);
+    const std::string outputPath = "";
+
+    compareHash(hashFilePath, sourceDrive, blockSize, compression, outputPath);
+  } catch (const std::invalid_argument &e) {
+    std::cerr << e.what() << "\n";
+    return 1;
+  }
+}
