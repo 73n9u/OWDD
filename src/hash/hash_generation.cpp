@@ -38,7 +38,7 @@ void generateHashFile(const char *sourcePath, size_t blockSize,
   // Iterate over the blocks of the sourcefile and calculate the hash of each of
   // them, writing to the ofstream
   ssize_t bytesRead;
-  char buffer[blockSize];
+  unsigned char buffer[blockSize];
   while ((bytesRead = read(fd, buffer, blockSize)) > 0) {
     auto hash = calcHash(buffer, bytesRead);
     // write the raw binary of the hash to file

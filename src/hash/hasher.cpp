@@ -12,9 +12,9 @@
  * @return Fixed-size array containing 32-byte SHA-256 hash
  * @throws std::runtime_error if hash context creation fails
  */
-std::array<unsigned char, 32> calcHash(const unsigned char *inputStream,
-                                       size_t size) {
-  std::array<unsigned char, 32> result;
+std::array<unsigned char, constants::HASH_SIZE>
+calcHash(const unsigned char *inputStream, size_t size) {
+  std::array<unsigned char, constants::HASH_SIZE> result;
   unsigned int hashLength;
   EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 
@@ -40,7 +40,8 @@ std::array<unsigned char, 32> calcHash(const unsigned char *inputStream,
  * @param hash 32-byte SHA-256 hash array
  * @return Lowercase hexadecimal representation (64 characters)
  */
-std::string hashToHex(const std::array<unsigned char, 32> &hash) {
+std::string
+hashToHex(const std::array<unsigned char, constants::HASH_SIZE> &hash) {
   std::stringstream ss;
   for (unsigned char byte : hash) {
     ss << std::hex << std::setw(2) << std::setfill('0')
