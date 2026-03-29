@@ -8,7 +8,7 @@
 #include <string>
 #include <zlib.h>
 
-#include "compressors.hpp"
+#include "compressors.h"
 
 CompressionType parseCompressionType(std::string compressionStr) {
   std::string upper;

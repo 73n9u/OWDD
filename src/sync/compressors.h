@@ -1,8 +1,6 @@
 #ifndef COMPRESSORS_HPP
 #define COMPRESSORS_HPP
 
-#include <cstring>
-
 #include <bzlib.h>
 #include <lzma.h>
 #include <string>
