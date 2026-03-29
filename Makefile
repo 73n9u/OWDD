@@ -8,35 +8,37 @@ SRC_SYNC = src/sync
 SRC_COMMON = src/common
 BUILD_DIR = build
 
+# Common src
+COMMON_SRCS = 	$(SRC_COMMON)/hash.cpp
+
 # Hash generation utility
-HASH_GEN_TARGET = $(BUILD_DIR)/hash_generation
-HASH_GEN_SRCS = $(SRC_HASH)/hash_generation.cpp \
-                $(SRC_HASH)/hasher.cpp
+HASH_GEN_TARGET = 	$(BUILD_DIR)/hash_generation
+HASH_GEN_SRCS = 	$(SRC_HASH)/hash_generation.cpp \
+			$(COMMON_SRCS) \
+			$(SRC_COMMON)/hash_serialiser.cpp
 
 # Sync utility
-SYNC_TARGET = $(BUILD_DIR)/block_sync
-SYNC_SRCS = $(SRC_SYNC)/block_sync.cpp \
-            $(SRC_SYNC)/detect_diff.cpp \
-            $(SRC_SYNC)/hash_reader.cpp \
-            $(SRC_HASH)/block_reader.cpp \
-            $(SRC_HASH)/hasher.cpp
+SYNC_TARGET = 	$(BUILD_DIR)/block_sync
+SYNC_SRCS = 	$(SRC_SYNC)/hash_sync.cpp \
+		$(SRC_SYNC)/compressors.cpp \
+		$(COMMON_SRCS) \
+		$(SRC_COMMON)/hash_deserialiser.cpp
 
-.PHONY: all clean hash sync
+.PHONY: all clean hash sync help
 
-all: hash sync
-
-hash: $(HASH_GEN_TARGET)
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
 $(HASH_GEN_TARGET): $(HASH_GEN_SRCS) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-sync: $(SYNC_TARGET)
-
 $(SYNC_TARGET): $(SYNC_SRCS) | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+
+hash: $(HASH_GEN_TARGET)
+sync: $(SYNC_TARGET)
+all: hash sync
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -45,6 +47,6 @@ help:
 	@echo "Available targets:"
 	@echo "  make hash     - Build hash generation utility"
 	@echo "  make sync     - Build block sync utility"
-	@echo "  make all      - Build all utilities (default: hash)"
+	@echo "  make all      - Build all utilities"
 	@echo "  make clean    - Remove built executables"
 	@echo "  make help     - Show this help message"
