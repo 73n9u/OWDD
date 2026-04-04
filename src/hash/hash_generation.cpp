@@ -1,10 +1,18 @@
-#include "hasher.hpp"
-#include <cerrno>
+#include "../common/hash.h"
+#include "../common/hash_serialiser.h"
 #include <cstring>
 #include <fcntl.h>
-#include <fstream>
 #include <iostream>
+#include <openssl/evp.h>
 #include <unistd.h>
+
+int openFile(std::string path, int flag) {
+  int fd = ::open(path.c_str(), flag);
+  if (fd == -1) {
+    throw std::runtime_error("Failed to open source file");
+  }
+  return fd;
+}
 
 /**
  * Generate hash file from a source file/device
@@ -13,63 +21,57 @@
  * @param blockSize Size of each block in bytes
  * @param outputPath Path to output hash file
  */
-void generateHashFile(const char *sourcePath, size_t blockSize,
-                      const std::string &outputPath) {
+void serialiseHashes(const std::string sourcePath, size_t blockSize,
+                     const std::string outputPath) {
 
-  // Open the disk first
-  int fd = open(sourcePath, O_RDONLY);
+  // TODO: Handle potential leaks when hashSer throws but sourceDrive is
+  // initialised
+  HashSerialiser hashSer{outputPath};
+  // Init the context to feed to the hash calculator
+  EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 
-  if (fd == -1) {
-    throw std::runtime_error(std::string("Failed to open source file: ") +
-                             sourcePath);
+  if (mdctx == nullptr) {
+    throw std::runtime_error(
+        "Failed to create EVP_MD_CTX for hash calculation");
   }
 
-  // Create an output stream for where to write the hashes to
-  std::ofstream hashFile(outputPath, std::ios::binary);
-  // Throw an errror if the file is open
-  if (!hashFile.is_open()) {
-    // Close the source file.
-    close(fd);
-    throw std::runtime_error("Failed to open output file: " + outputPath);
-  }
+  int sourceDrive = openFile(sourcePath, O_RDONLY);
 
-  long long totalBlocks = 0;
+  std::vector<unsigned char> buffer(blockSize);
 
-  // Iterate over the blocks of the sourcefile and calculate the hash of each of
-  // them, writing to the ofstream
+  uint64_t currentBlock = 0;
   ssize_t bytesRead;
-  unsigned char buffer[blockSize];
-  while ((bytesRead = read(fd, buffer, blockSize)) > 0) {
-    auto hash = calcHash(buffer, bytesRead);
-    // write the raw binary of the hash to file
-    hashFile.write(reinterpret_cast<const char *>(hash.data()), hash.size());
-    // increment the blockCounter
-    totalBlocks++;
+  while ((bytesRead = ::read(sourceDrive, buffer.data(), blockSize)) > 0) {
+
+    Hash hash = Hash::calcHash(mdctx, buffer.data(), bytesRead, currentBlock);
+    hash.printBlockNum();
+    hash.printHash();
+    hashSer.write(hash);
+
+    currentBlock++;
   }
   if (bytesRead == -1) {
-    close(fd);
-    throw std::runtime_error(
-        std::string("Reading block encountered an error:") + strerror(errno));
+    EVP_MD_CTX_free(mdctx);
+    close(sourceDrive);
+    throw std::runtime_error("Read error on file: " + sourcePath);
   }
 
-  close(fd);
-  hashFile.close();
-  std::cout << "Done! Generated " << totalBlocks << " hashes.\n";
+  EVP_MD_CTX_free(mdctx);
+  close(sourceDrive);
+  return;
 }
 
 int main(int argc, char *argv[]) {
   if (argc < 4) {
-    std::cerr << "Usage: " << argv[0] << " <source> <blocksize> <output>\n";
-    std::cerr << "Example: " << argv[0] << " /dev/sda1 4096 disk.hash\n";
-    return 1;
+    throw std::runtime_error("4 Parameters required. Received only: " +
+                             std::to_string(argc));
   }
-
-  const char *source = argv[1];
-  size_t blockSize = std::stoul(argv[2]);
-  std::string output = argv[3];
+  const std::string sourcePath = argv[1];
+  const size_t blockSize = std::stoi(argv[2]);
+  const std::string outputPath = argv[3];
 
   try {
-    generateHashFile(source, blockSize, output);
+    serialiseHashes(sourcePath, blockSize, outputPath);
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
