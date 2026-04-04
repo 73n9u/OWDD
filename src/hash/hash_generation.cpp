@@ -39,7 +39,7 @@ void serialiseHashes(const std::string sourcePath, size_t blockSize,
 
   std::vector<unsigned char> buffer(blockSize);
 
-  uint8_t currentBlock = 0;
+  uint64_t currentBlock = 0;
   ssize_t bytesRead;
   while ((bytesRead = ::read(sourceDrive, buffer.data(), blockSize)) > 0) {
 
