@@ -41,7 +41,6 @@ void serialiseHashes(const std::string sourcePath, size_t blockSize,
 
   uint8_t currentBlock = 0;
   ssize_t bytesRead;
-  std::vector<unsigned char> writeBuffer;
   while ((bytesRead = ::read(sourceDrive, buffer.data(), blockSize)) > 0) {
 
     Hash hash = Hash::calcHash(mdctx, buffer.data(), bytesRead, currentBlock);
