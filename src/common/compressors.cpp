@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <bzlib.h>
 #include <cstring>
-#include <iostream>
 #include <lzma.h>
 #include <stdexcept>
 #include <string>
@@ -11,7 +10,7 @@
 #include "compressors.h"
 
 CompressionType parseCompressionType(std::string compressionStr) {
-  std::string upper;
+  std::string upper = compressionStr;
   std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
   if (upper == "GZIP")
     return CompressionType::GZIP;
@@ -57,11 +56,9 @@ void compressBZIP2(const unsigned char *input, size_t inputSize,
     BZ2_bzCompressEnd(&stream);
     throw std::runtime_error(std::string("BZIP compression failed."));
   }
-  std::cout << "Total input bytes is: " << stream.total_in_lo32 << "\n";
-  std::cout << "Total output bytes is: " << stream.total_out_lo32 << "\n";
+  // TODO: pass compressionRatio to caller
   double compressionRatio = static_cast<float>(stream.total_out_lo32) /
                             static_cast<float>(stream.total_in_lo32);
-  std::cout << "Compression ratio is: " << compressionRatio << "\n";
   BZ2_bzCompressEnd(&stream);
 }
 
@@ -101,11 +98,9 @@ void compressGZIP(const unsigned char *input, size_t inputSize,
     throw std::runtime_error(std::string("Failed to compress GZIP stream"));
   }
 
-  std::cout << "Total input bytes is: " << stream.total_in << "\n";
-  std::cout << "Total output bytes is: " << stream.total_out << "\n";
+  // TODO: pass compressionRatio to caller
   double compressionRatio = static_cast<float>(stream.total_out) /
                             static_cast<float>(stream.total_in);
-  std::cout << "Compression ratio is: " << compressionRatio << "\n";
 
   deflateEnd(&stream);
 }
@@ -134,10 +129,8 @@ void compressLZMA(const unsigned char *input, size_t inputSize,
     lzma_end(&stream);
     throw std::runtime_error(std::string("Error compressing LZMA stream."));
   }
-  std::cout << "Total input bytes is: " << stream.total_in << "\n";
-  std::cout << "Total output bytes is: " << stream.total_out << "\n";
+  // TODO: pass compressionRatio to caller
   double compressionRatio = static_cast<float>(stream.total_out) /
                             static_cast<float>(stream.total_in);
-  std::cout << "Compression ratio is: " << compressionRatio << "\n";
   lzma_end(&stream);
 }

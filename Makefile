@@ -9,19 +9,19 @@ SRC_COMMON = src/common
 BUILD_DIR = build
 
 # Common src
-COMMON_SRCS = 	$(SRC_COMMON)/hash.cpp
+COMMON_SRCS = 	$(SRC_COMMON)
 
 # Hash generation utility
 HASH_GEN_TARGET = 	$(BUILD_DIR)/hash_generation
 HASH_GEN_SRCS = 	$(SRC_HASH)/hash_generation.cpp \
-			$(COMMON_SRCS) \
+			$(COMMON_SRCS)/hash.cpp \
 			$(SRC_COMMON)/hash_serialiser.cpp
 
 # Sync utility
 SYNC_TARGET = 	$(BUILD_DIR)/block_sync
 SYNC_SRCS = 	$(SRC_SYNC)/hash_sync.cpp \
-		$(SRC_SYNC)/compressors.cpp \
-		$(COMMON_SRCS) \
+		$(COMMON_SRCS)/hash.cpp \
+		$(COMMON_SRCS)/compressors.cpp \
 		$(SRC_COMMON)/hash_deserialiser.cpp
 
 .PHONY: all clean hash sync help
