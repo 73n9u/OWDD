@@ -47,6 +47,8 @@ void compressBZIP2(const unsigned char *input, size_t inputSize,
 
   // Set the streams data output pointer and size
   stream.next_out = reinterpret_cast<char *>(output);
+  // TODO: this can worst case be larger than the input because it's shit.
+  // Increase based on spec.
   stream.avail_out = inputSize;
 
   // Compress the entire input
