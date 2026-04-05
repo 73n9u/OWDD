@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wunused-function -Wunused-label -Wunused-variable -Wextra -O2
+CXXFLAGS = -std=c++23 -Wall -Wunused-function -Wunused-label -Wunused-variable -Wextra -O2
 LDFLAGS = -lssl -lcrypto -lz -lbz2 -llzma
 
 # Directories
