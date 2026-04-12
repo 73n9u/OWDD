@@ -67,7 +67,6 @@ public:
 class OpenSSLException : public OWDDException {
 
 public:
-  explicit OpenSSLException(const std::string &msg, const int return_val)
-      : OWDDException("An error occured with openssl function: " + msg +
-                      " with return value: " + std::to_string(return_val)) {}
+  explicit OpenSSLException(const std::string &msg)
+      : OWDDException("An error occured with openssl function: " + msg) {}
 };
