@@ -8,6 +8,7 @@
 #include <zlib.h>
 
 #include "compressors.h"
+#include "exceptions.h"
 
 CompressionType parseCompressionType(std::string compressionStr) {
   std::string upper = compressionStr;
@@ -38,7 +39,7 @@ void compressBZIP2(const unsigned char *input, size_t inputSize,
 
   // Check for errors in bz_res initialisation
   if (bz_res != BZ_OK) {
-    throw std::runtime_error(std::string("Error initializing BZIP2 stream."));
+    throw BZIP2Exception(bz_res, "Failed to initialise BZIP2 stream.");
   }
 
   // Set the streams data input pointer and size
@@ -56,7 +57,7 @@ void compressBZIP2(const unsigned char *input, size_t inputSize,
 
   if (bz_res != BZ_STREAM_END) {
     BZ2_bzCompressEnd(&stream);
-    throw std::runtime_error(std::string("BZIP compression failed."));
+    throw BZIP2Exception(bz_res, "BZIP2 compression failed to complete.");
   }
   // TODO: pass compressionRatio to caller
   double compressionRatio = static_cast<float>(stream.total_out_lo32) /
@@ -77,11 +78,11 @@ void compressGZIP(const unsigned char *input, size_t inputSize,
   // compression
   int z_res = deflateInit(&stream, Z_BEST_COMPRESSION);
 
-  size_t compressedSize = deflateBound(&stream, inputSize);
-
   if (z_res != Z_OK) {
-    throw std::runtime_error(std::string("Failed to initialize GZIP stream"));
+    throw GZIPException(z_res, "Failed to initialise GZIP stream.");
   }
+
+  size_t compressedSize = deflateBound(&stream, inputSize);
 
   // Define the next in as a cast of the input as z_streams require
   // next inputs to be Bytef types
@@ -97,7 +98,7 @@ void compressGZIP(const unsigned char *input, size_t inputSize,
   // If we didn't reach the end of the stream without an error
   if (z_res != Z_STREAM_END) {
     deflateEnd(&stream);
-    throw std::runtime_error(std::string("Failed to compress GZIP stream"));
+    throw GZIPException(z_res, "GZIP compression failed to complete.");
   }
 
   // TODO: pass compressionRatio to caller
@@ -116,7 +117,7 @@ void compressLZMA(const unsigned char *input, size_t inputSize,
       lzma_easy_encoder(&stream, LZMA_PRESET_DEFAULT, LZMA_CHECK_CRC64);
 
   if (ret != LZMA_OK) {
-    throw std::runtime_error(std::string("Error initialising LZMA stream."));
+    throw LZMAException(ret, "Failed to initialise LZMA stream.");
   }
 
   stream.next_in = input;
@@ -129,7 +130,7 @@ void compressLZMA(const unsigned char *input, size_t inputSize,
 
   if (ret != LZMA_STREAM_END) {
     lzma_end(&stream);
-    throw std::runtime_error(std::string("Error compressing LZMA stream."));
+    throw LZMAException(ret, "LZMA compression failed to complete.");
   }
   // TODO: pass compressionRatio to caller
   double compressionRatio = static_cast<float>(stream.total_out) /
