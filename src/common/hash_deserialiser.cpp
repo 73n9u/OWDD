@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <string>
@@ -12,9 +13,7 @@
 HashDeserialiser::HashDeserialiser(const std::string inputFile)
     : fdInput{open(inputFile.c_str(), O_RDONLY)} {
   if (fdInput == -1)
-    throw FileOpenException(
-        inputFile,
-        "Hash file to deserialise doesn't exist or was unable to be opened.");
+    throw FileOpenException(inputFile, strerror(errno));
 }
 HashDeserialiser::~HashDeserialiser() { close(fdInput); }
 

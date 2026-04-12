@@ -2,6 +2,7 @@
 #include "exceptions.h"
 #include "hash.h"
 #include <array>
+#include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
 #include <vector>
@@ -10,7 +11,7 @@ HashSerialiser::HashSerialiser(const std::string &outputPath)
     : m_fd{::open(outputPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644)},
       m_writeBuffer{} {
   if (m_fd == -1) {
-    throw FileOpenException(outputPath, "Serialise output file may not exist.");
+    throw FileOpenException(outputPath, strerror(errno));
   }
 }
 
