@@ -1,4 +1,5 @@
 #include "../common/compressors.h"
+#include "../common/exceptions.h"
 #include "../common/hash.h"
 #include "../common/hash_deserialiser.h"
 #include <cstring>
@@ -37,8 +38,7 @@ std::vector<Hash> deserialiseHashes(const std::string hashFile,
   // Open destDrive
   int sd = ::open(sourceDrive.c_str(), O_RDONLY);
   if (sd == -1) {
-    throw std::runtime_error(std::string("Failed to open source drive: ") +
-                             sourceDrive);
+    throw FileOpenException(sourceDrive, strerror(errno));
   }
   std::cout << "After source drive opening?\n";
 
@@ -47,8 +47,8 @@ std::vector<Hash> deserialiseHashes(const std::string hashFile,
   EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 
   if (mdctx == nullptr) {
-    throw std::runtime_error(
-        "Failed to create EVP_MD_CTX for hash calculation");
+    throw OpenSSLException(
+        "Failed to create EVP_MD_CTX for hash_sync hash calculation");
   }
 
   ssize_t bytesRead;
@@ -64,20 +64,20 @@ std::vector<Hash> deserialiseHashes(const std::string hashFile,
       // compType
       std::cout << "The hashes at blockNum: " << currentBlock
                 << " differ. Compressing with: " << currentBlock << '\n';
-      unsigned char compressedData[blockSize];
+      std::vector<unsigned char> compressedData(blockSize);
       switch (compType) {
       case CompressionType::GZIP:
-        compressGZIP(buffer.data(), blockSize, compressedData);
+        compressGZIP(buffer.data(), blockSize, compressedData.data());
         break;
       case CompressionType::LZMA:
-        compressLZMA(buffer.data(), blockSize, compressedData);
+        compressLZMA(buffer.data(), blockSize, compressedData.data());
         break;
       case CompressionType::BZIP2:
-        compressBZIP2(buffer.data(), blockSize, compressedData);
+        compressBZIP2(buffer.data(), blockSize, compressedData.data());
         break;
       }
       std::cout << "Compressed data into output buffer.\n";
-      of << compressedData;
+      of << compressedData.data();
     } else {
       std::cout << "Blocks hash values match\n";
     }

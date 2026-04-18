@@ -1,8 +1,9 @@
 #include "hash_serialiser.h"
+#include "exceptions.h"
 #include "hash.h"
 #include <array>
+#include <cstring>
 #include <fcntl.h>
-#include <stdexcept>
 #include <unistd.h>
 #include <vector>
 
@@ -10,14 +11,14 @@ HashSerialiser::HashSerialiser(const std::string &outputPath)
     : m_fd{::open(outputPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644)},
       m_writeBuffer{} {
   if (m_fd == -1) {
-    throw std::runtime_error("Failed to open output file: " + outputPath);
+    throw FileOpenException(outputPath, strerror(errno));
   }
 }
 
 HashSerialiser::~HashSerialiser() {
   try {
     flush();
-  } catch (...) {
+  } catch (FileWriteException) {
   }
   ::close(m_fd);
 }
@@ -38,7 +39,7 @@ void HashSerialiser::flush() {
 
   ssize_t written = ::write(m_fd, m_writeBuffer.data(), m_writeBuffer.size());
   if (written == -1) {
-    throw std::runtime_error("Failed to write to file");
+    throw FileWriteException("Serialise file encountered an error.");
   }
   m_writeBuffer.clear();
 }

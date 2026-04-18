@@ -1,18 +1,19 @@
 #include "hash_deserialiser.h"
+#include "exceptions.h"
 #include "hash.h"
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <fcntl.h>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <unistd.h>
 
 HashDeserialiser::HashDeserialiser(const std::string inputFile)
     : fdInput{open(inputFile.c_str(), O_RDONLY)} {
   if (fdInput == -1)
-    throw std::runtime_error("Failed to open output file: " + inputFile);
+    throw FileOpenException(inputFile, strerror(errno));
 }
 HashDeserialiser::~HashDeserialiser() { close(fdInput); }
 
@@ -24,7 +25,7 @@ bool HashDeserialiser::read(Hash &output) {
     return false;
   }
   if (bytesRead != OBJSIZE) {
-    throw std::runtime_error("Failed to read complete binary hash object");
+    throw FileReadException("Complete binary hash object couldn't be read.");
   }
 
   uint64_t blockNum{0};
