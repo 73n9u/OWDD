@@ -24,8 +24,22 @@ CompressionType parseCompressionType(std::string compressionStr) {
       ". Supported options are: GZIP, BZIP2, and LZMA.");
 }
 
-void compressBZIP2(const unsigned char *input, size_t inputSize,
-                   unsigned char *output) {
+size_t compressionBound(CompressionType compType, size_t inputSize) {
+  switch (compType) {
+  case CompressionType::GZIP:
+    return deflateBound(Z_NULL, inputSize);
+  case CompressionType::LZMA:
+    return lzma_stream_buffer_bound(inputSize);
+  case CompressionType::BZIP2:
+    // We add a 1% headroom of the inputSize to output buffer
+    // plus an additional 600 bytes of size according to:
+    // https://sourceware.org/pub/bzip2/docs/v101/manual_3.html
+    return inputSize + (inputSize / 100) + 600;
+  }
+}
+
+size_t compressBZIP2(const unsigned char *input, size_t inputSize,
+                     unsigned char *output, size_t outputCapacity) {
 
   // Initialize the stream with BZIP2 default memory allocators
   bz_stream stream;
