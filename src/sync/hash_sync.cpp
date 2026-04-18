@@ -26,21 +26,18 @@ std::vector<Hash> deserialiseHashes(const std::string hashFile,
                                     const std::string outputPath,
                                     const ssize_t blockSize,
                                     CompressionType compType) {
-  std::cout << "Are you getting here?\n";
   uint64_t currentBlock{0};
   std::vector<Hash> hashes{};
   std::vector<unsigned char> buffer(blockSize);
   // unsigned char diskBuffer[blockSize];
   //  Initialise deserialiser for input hash file
   HashDeserialiser hashDeser{hashFile};
-  std::cout << "How about after deser init?\n";
 
   // Open destDrive
   int sd = ::open(sourceDrive.c_str(), O_RDONLY);
   if (sd == -1) {
     throw FileOpenException(sourceDrive, strerror(errno));
   }
-  std::cout << "After source drive opening?\n";
 
   std::ofstream of(outputPath);
   // Init the context to feed to the hash calculator
