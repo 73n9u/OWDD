@@ -61,16 +61,36 @@ std::vector<Hash> deserialiseHashes(const std::string hashFile,
       // compType
       std::cout << "The hashes at blockNum: " << currentBlock
                 << " differ. Compressing with: " << currentBlock << '\n';
-      std::vector<unsigned char> compressedData(blockSize);
+
+      // Instantiate bytes written for determining valid compression data
+      // size to fit within transmission payload
+      size_t bytesWritten{};
+
+      // Initialise compressedData as it's size is based on compression type
+      // and resized in the respective compression case
+      std::vector<unsigned char> compressedData;
+
       switch (compType) {
       case CompressionType::GZIP:
-        compressGZIP(buffer.data(), blockSize, compressedData.data());
+        compressedData.resize(
+            compressionBound(CompressionType::GZIP, blockSize));
+        bytesWritten =
+            compressGZIP(buffer.data(), blockSize, compressedData.data(),
+                         compressedData.size());
         break;
       case CompressionType::LZMA:
-        compressLZMA(buffer.data(), blockSize, compressedData.data());
+        compressedData.resize(
+            compressionBound(CompressionType::LZMA, blockSize));
+        bytesWritten =
+            compressLZMA(buffer.data(), blockSize, compressedData.data(),
+                         compressedData.size());
         break;
       case CompressionType::BZIP2:
-        compressBZIP2(buffer.data(), blockSize, compressedData.data());
+        compressedData.resize(
+            compressionBound(CompressionType::LZMA, blockSize));
+        bytesWritten =
+            compressBZIP2(buffer.data(), blockSize, compressedData.data(),
+                          compressedData.size());
         break;
       }
       std::cout << "Compressed data into output buffer.\n";
