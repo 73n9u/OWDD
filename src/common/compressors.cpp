@@ -64,7 +64,7 @@ size_t compressBZIP2(const unsigned char *input, size_t inputSize,
   stream.next_out = reinterpret_cast<char *>(output);
   // TODO: this can worst case be larger than the input because it's shit.
   // Increase based on spec.
-  stream.avail_out = inputSize;
+  stream.avail_out = outputCapacity;
 
   // Compress the entire input
   bz_res = BZ2_bzCompress(&stream, BZ_FINISH);
@@ -77,10 +77,11 @@ size_t compressBZIP2(const unsigned char *input, size_t inputSize,
   double compressionRatio = static_cast<float>(stream.total_out_lo32) /
                             static_cast<float>(stream.total_in_lo32);
   BZ2_bzCompressEnd(&stream);
+  return stream.total_out_lo32;
 }
 
-void compressGZIP(const unsigned char *input, size_t inputSize,
-                  unsigned char *output) {
+size_t compressGZIP(const unsigned char *input, size_t inputSize,
+                    unsigned char *output, size_t outputCapacity) {
 
   // Init z_stream object
   z_stream stream = {};
@@ -96,15 +97,13 @@ void compressGZIP(const unsigned char *input, size_t inputSize,
     throw GZIPException(z_res, "Failed to initialise GZIP stream.");
   }
 
-  size_t compressedSize = deflateBound(&stream, inputSize);
-
   // Define the next in as a cast of the input as z_streams require
   // next inputs to be Bytef types
   stream.next_in = const_cast<Bytef *>(input);
   stream.avail_in = static_cast<uInt>(inputSize);
 
   stream.next_out = output;
-  stream.avail_out = static_cast<uInt>(compressedSize);
+  stream.avail_out = static_cast<uInt>(outputCapacity);
 
   // Compress the input in the stream in one pass until it's finished
   z_res = deflate(&stream, Z_FINISH);
@@ -120,10 +119,11 @@ void compressGZIP(const unsigned char *input, size_t inputSize,
                             static_cast<float>(stream.total_in);
 
   deflateEnd(&stream);
+  return stream.total_out;
 }
 
-void compressLZMA(const unsigned char *input, size_t inputSize,
-                  unsigned char *output) {
+size_t compressLZMA(const unsigned char *input, size_t inputSize,
+                    unsigned char *output, size_t outputCapacity) {
 
   lzma_stream stream = LZMA_STREAM_INIT;
 
@@ -138,7 +138,7 @@ void compressLZMA(const unsigned char *input, size_t inputSize,
   stream.avail_in = inputSize;
 
   stream.next_out = output;
-  stream.avail_out = inputSize;
+  stream.avail_out = outputCapacity;
 
   ret = lzma_code(&stream, LZMA_FINISH);
 
@@ -150,4 +150,5 @@ void compressLZMA(const unsigned char *input, size_t inputSize,
   double compressionRatio = static_cast<float>(stream.total_out) /
                             static_cast<float>(stream.total_in);
   lzma_end(&stream);
+  return stream.total_out;
 }
